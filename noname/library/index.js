@@ -380,14 +380,14 @@ export class Library {
 										typeof yingbianZhuzhanAI == "function"
 											? yingbianZhuzhanAI(player, card, source, targets)
 											: cardx => {
-													var info = get.info(card);
-													if (info && info.ai && info.ai.yingbian) {
-														var ai = info.ai.yingbian(card, source, targets, player);
-														if (!ai) return 0;
-														return ai - get.value(cardx);
-													} else if (get.attitude(player, source) <= 0) return 0;
-													return 5 - get.value(cardx);
-											  },
+												var info = get.info(card);
+												if (info && info.ai && info.ai.yingbian) {
+													var ai = info.ai.yingbian(card, source, targets, player);
+													if (!ai) return 0;
+													return ai - get.value(cardx);
+												} else if (get.attitude(player, source) <= 0) return 0;
+												return 5 - get.value(cardx);
+											},
 								});
 								if (!game.online) return;
 								_status.event._resultid = id;
@@ -1136,11 +1136,6 @@ export class Library {
 					init: false,
 					unfrequent: true,
 				},
-				errstop: {
-					name: "出错时停止游戏",
-					init: false,
-					unfrequent: true,
-				},
 				update_link: {
 					name: "更新地址",
 					init: "coding",
@@ -1335,11 +1330,6 @@ export class Library {
 						map.confirm_exit.show();
 					} else {
 						map.confirm_exit.hide();
-					}
-					if (config.dev) {
-						map.errstop.show();
-					} else {
-						map.errstop.hide();
 					}
 				},
 			},
@@ -2520,6 +2510,47 @@ export class Library {
 					},
 					unfrequent: true,
 				},
+				zhishixian: {
+					name: "指示线",
+					intro: "设置卡牌、技能的指示特效",
+					init: 'default',
+					unfrequent: true,
+					item: {
+						next_moren: "◈经典———",
+						default: "默认",
+						Mohua: '水墨',
+						Xiangong: '先攻',
+						Zhuzhang: '竹杖',
+						next_Shuimo: "◈专属———",
+						Shuimo: "幻彩",
+						Anhei: '黑暗',
+						Mozhua: '魔爪',
+						Shenjian: '神剑',
+						Yujian: '御剑',
+						next_Jianfeng: "◈测试———",
+						Jianfeng: '剑锋',
+						Jinjian: '金箭',
+						Jinlong: '金龙',
+						Yuexian: '乐仙',
+						Xingdie: '星蝶',
+						Luoying: '落英',
+						Shezhang: '蛇杖',
+					},
+					onclick: function (layout) {
+						if (layout == "next_moren") { var items = 'default'; }
+						else if (layout == "next_Shuimo") { var items = 'Shuimo'; }
+						else if (layout == "next_Jianfeng") { var items = 'Jianfeng'; }
+						else {
+							var items = layout;
+						}
+						game.saveConfig('zhishixian', layout);
+						if (items == 'default') {
+							game.linexy = game.zsOriginLineXy;
+						} else {
+							game.linexy = game['zs' + items + 'LineXy'];
+						}
+					}
+				},
 				border_style: {
 					name: "角色边框",
 					init: "default",
@@ -3627,6 +3658,11 @@ export class Library {
 						map.show_time.show();
 						map.watchface.hide();
 					}
+					if (lib.config.show_deckMonitor) {
+						map.show_deckMonitor_online.show();
+					} else {
+						map.show_deckMonitor_online.hide();
+					}
 					if (lib.config.show_extensionmaker) {
 						map.show_extensionshare.show();
 					} else {
@@ -4170,15 +4206,7 @@ export class Library {
 					unfrequent: true,
 					onclick(bool) {
 						game.saveConfig("show_tip", bool);
-						if (lib.config.show_tip) {
-							game.css({
-								".tipContainer": {
-									display: "flex !important",
-								},
-							});
-						} else {
-							game.css({ ".tipContainer": { display: "none !important" } });
-						}
+						document.documentElement.style.setProperty("--tip-display", bool ? "flex" : "none");
 					},
 				},
 				show_deckMonitor: {
@@ -4186,11 +4214,34 @@ export class Library {
 					init: true,
 					unfrequent: true,
 					onclick(bool) {
-						game.saveConfig("show_deckMonitor", bool);
-						if (lib.config.show_deckMonitor) {
-							ui.deckMonitor.style.display = "";
+						if (_status.connectMode) {
+							if(confirm('当前为联机模式，修改此设置需重启，是否重启？')){
+								game.saveConfig("show_deckMonitor", bool);
+								game.reload();
+							} else this.classList.toggle("on");
 						} else {
-							ui.deckMonitor.style.display = "none";
+							game.saveConfig("show_deckMonitor", bool);
+							if (lib.config.show_deckMonitor) {
+								ui.deckMonitor.style.display = "";
+							} else {
+								ui.deckMonitor.style.display = "none";
+							}
+						}
+					},
+				},
+				show_deckMonitor_online: {
+					name: "联机显示记牌器",
+					intro: "如果你是房主，此设置对所有人生效",
+					init: false,
+					unfrequent: true,
+					onclick(bool) {
+						if (_status.connectMode) {
+							if(confirm('当前为联机模式，修改此设置须重启，是否重启？')){
+								game.saveConfig("show_deckMonitor_online", bool);
+								game.reload();
+							} else this.classList.toggle("on");
+						} else {
+							game.saveConfig("show_deckMonitor_online", bool);
 						}
 					},
 				},
@@ -6651,7 +6702,7 @@ export class Library {
 					frequent: true,
 					intro: "读取剪贴板以解析邀请链接自动加入联机房间",
 				},
-				check_versionCode: {
+				check_versionLocal: {
 					name: "禁止不同版本玩家进房",
 					init: false,
 					intro: "禁止与自己版本不同的玩家进入房间",
@@ -8262,10 +8313,10 @@ export class Library {
 	genAwait(item) {
 		return gnc.is.generator(item)
 			? gnc.of(function* () {
-					for (const content of item) {
-						yield content;
-					}
-			  })()
+				for (const content of item) {
+					yield content;
+				}
+			})()
 			: Promise.resolve(item);
 	}
 	gnc = {
@@ -10112,7 +10163,11 @@ export class Library {
 				return false;
 			if (info.filter && !info.filter(event, player, triggername, indexedData)) return false;
 			if (event._notrigger.includes(player) && !lib.skill.global.includes(skill)) return false;
-			if (typeof info.usable == "number" && player.hasSkill("counttrigger") && player.storage.counttrigger && player.storage.counttrigger[skill] >= info.usable) return false;
+			if (info.usable !== undefined && player.hasSkill("counttrigger") && player.storage.counttrigger) {
+				let num = info.usable;
+				if (typeof num === "function") num = info.usable(skill, player);
+				if (typeof num === "number" && player.storage.counttrigger[skill] >=num) return false;
+			}
 			if (info.round && info.round - (game.roundNumber - player.storage[skill + "_roundcount"]) > 0) return false;
 			for (const item in player.storage) {
 				if (item.startsWith("temp_ban_")) {
@@ -10159,7 +10214,11 @@ export class Library {
 				if (info.viewAsFilter && info.viewAsFilter(player) === false) return false;
 				if (event.filterCard && !event.filterCard(get.autoViewAs(info.viewAs, "unsure"), player, event)) return false;
 			}
-			if (info.usable && get.skillCount(skill) >= info.usable) return false;
+			if (info.usable !== undefined) {
+				let num = info.usable;
+				if (typeof num === "function") num = info.usable(skill, player);
+				if (typeof num === "number" && get.skillCount(skill, player) >=num) return false;
+			}
 			if (info.chooseButton && _status.event.noButton) return false;
 			if (info.round && info.round - (game.roundNumber - player.storage[skill + "_roundcount"]) > 0) return false;
 			for (const item in player.storage) {
@@ -10332,6 +10391,13 @@ export class Library {
 			}
 			return false;
 		},
+		/**
+		 * player的card在event事件中能否被自己弃置
+		 * @param { Card } card 要被弃置的牌
+		 * @param { Player } player 执行弃牌的角色
+		 * @param { string } [event] 弃置牌事件的名称
+		 * @returns { boolean }
+		 */
 		cardDiscardable: function (card, player, event) {
 			event = event || _status.event;
 			if (typeof event != "string") event = event.getParent().name;
@@ -10341,8 +10407,8 @@ export class Library {
 		},
 		/**
 		 * target的card在event事件中能否被player弃置
-		 * @param { Card } card 考虑要被弃置的牌
-		 * @param { Player } player 考虑执行弃置牌的角色
+		 * @param { Card } card 要被弃置的牌
+		 * @param { Player } player 执行弃牌的角色
 		 * @param { Player } target 被弃置牌的现持有者
 		 * @param { string } [event] 弃置牌事件的名称
 		 * @returns { boolean }
@@ -10356,8 +10422,8 @@ export class Library {
 		},
 		/**
 		 * target的card在event事件中能否被player获得
-		 * @param { Card } card 考虑要被获得的牌
-		 * @param { Player } player 考虑获得牌的角色
+		 * @param { Card } card 要被获得的牌
+		 * @param { Player } player 获得牌的角色
 		 * @param { Player } target 被获得牌的现持有者
 		 * @param { string } [event] 获得牌事件的名称
 		 * @returns { boolean }
@@ -10863,16 +10929,16 @@ export class Library {
 					const cardName = get.name(cards[0], player);
 					return cardName
 						? new lib.element.VCard({
-								name: cardName,
-								nature: get.nature(cards[0], player),
-								suit: get.suit(cards[0], player),
-								number: get.number(cards[0], player),
-								isCard: true,
-								cards: [cards[0]],
-								storage: {
-									stratagem_buffed: 1,
-								},
-						  })
+							name: cardName,
+							nature: get.nature(cards[0], player),
+							suit: get.suit(cards[0], player),
+							number: get.number(cards[0], player),
+							isCard: true,
+							cards: [cards[0]],
+							storage: {
+								stratagem_buffed: 1,
+							},
+						})
 						: new lib.element.VCard();
 				}
 				return null;
@@ -11282,8 +11348,8 @@ export class Library {
 				if (!zhengsus || !zhengsus.length) return false;
 				return zhengsus.some(zhengsu => player.storage[zhengsu]);
 			},
-			content: function () {
-				player.chooseDrawRecover(2, "整肃奖励：摸两张牌或回复1点体力");
+			async content(event, trigger, player) {
+				await player.chooseDrawRecover(2, "整肃奖励：摸两张牌或回复1点体力", true);
 			},
 			subSkill: {
 				leijin: {
@@ -12297,10 +12363,30 @@ export class Library {
 	cardPile = {};
 	message = {
 		server: {
+			cardPile() {
+				this.send(JSON.stringify({
+					type: "cardPile",
+					data: {
+						drawPile: Array.from(ui.cardPile.children),
+						discardPile: Array.from(ui.discardPile.children)
+					}
+				}));
+			},
 			/**
 			 * @this {import("./element/client.js").Client}
 			 */
 			init(version, config, banned_info) {
+				var show_deckMonitor = false;
+				if (lib.config.show_deckMonitor && lib.config.show_deckMonitor_online) {
+					show_deckMonitor = true;
+				}
+				this.send(function (show_deckMonitor) {
+					if (show_deckMonitor) {
+						ui.deckMonitor.style.display = "";
+					} else {
+						ui.deckMonitor.style.display = "none";
+					}
+				}, show_deckMonitor);
 				this.onlineKey = config.onlineKey;
 				var banBlacklist = lib.config.banBlacklist === undefined ? [] : lib.config.banBlacklist;
 				if (lib.node.banned.includes(banned_info) || banBlacklist.includes(config.onlineKey)) {
@@ -12882,7 +12968,7 @@ export class Library {
 								navigator.clipboard
 									.readText()
 									.then(read)
-									.catch(_ => {});
+									.catch(_ => { });
 							} else {
 								var input = ui.create.node("textarea", ui.window, { opacity: "0" });
 								input.select();
@@ -13490,6 +13576,13 @@ export class Library {
 			},
 		},
 	};
+	//为lib.numstrList属性set数字对应花色，即可在get.strNumber和get.numString中获取使用
+	numstrList = new Map([
+		[1, "A"],
+		[11, "J"],
+		[12, "Q"],
+		[13, "K"],
+	]);
 	suit = ["club", "spade", "diamond", "heart"];
 	suits = ["club", "spade", "diamond", "heart", "none"];
 	color = {
@@ -14137,6 +14230,13 @@ export class Library {
 				showName: "幽",
 				color: "#ff6a6a",
 				nature: "red",
+			},
+		],
+		[
+			"威",
+			{
+				color: "#ff9966",
+				nature: "glodenmm",
 			},
 		],
 	]);

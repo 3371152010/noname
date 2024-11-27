@@ -1,5 +1,6 @@
 const characters = {
 	noname: ["female", "key", 3, ["noname_zhuyuan", "noname_duocai"], ["name:null|无"]],
+	ns_shijian: ["female", "key", 4, ["nspianwu"]],
 
 	ns_huangchengyan: ["male", "shu", 3, ["nslongyue", "nszhenyin"]],
 	ns_sunchensunjun: ["male", "wu", 5, ["nsxianhai", "nsxingchu"], ["name:孙|綝-孙|峻"]],
@@ -34,7 +35,6 @@ const characters = {
 	// diy_weiyan:['male','shu',4,['diykuanggu']],
 	diy_zhenji: ["female", "wei", 3, ["diy_jiaoxia", "yiesheng"]],
 	// diy_menghuo:['male','shu',4,['huoshou','zaiqix']],
-	//re_huangyueying:['female','shu',3,['rejizhi','qicai']],
 
 	diy_liufu: ["male", "wei", 3, ["zhucheng", "duoqi"]],
 	diy_xizhenxihong: ["male", "shu", 4, ["fuchou", "jinyan"], ["name:习|珍-习|宏"]],

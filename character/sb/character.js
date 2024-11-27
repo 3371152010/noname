@@ -1,4 +1,6 @@
 const characters = {
+	sb_zhangliao: ["male", "wei", 4, ["sbtuxi", "sbdengfeng"]],
+	sb_guojia: ["male", "wei", 3, ["sbtiandu", "sbyiji"]],
 	sb_zhugejin: ["male", "wu", 3, ["sbhuanshi", "sbhongyuan", "sbmingzhe"], ["name:诸葛|瑾"]],
 	sb_jiaxu: ["male", "qun", 3, ["sbwansha", "sbluanwu", "sbweimu"]],
 	sb_handang: ["male", "wu", 4, ["sbgongqi", "sbjiefan"]],
@@ -41,7 +43,7 @@ const characters = {
 	sb_sunce: ["male", "wu", 4, ["sbjiang", "sbhunzi", "sbzhiba"], ["zhu"]],
 	sb_daqiao: ["female", "wu", 3, ["sbguose", "sbliuli"], ["name:桥|null"]],
 	sb_liubiao: ["male", "qun", 3, ["sbzishou", "sbzongshi"]],
-	sb_zhurong: ["female", "shu", 4, ["sblieren", "sbjuxiang"], ["doublegroup:shu:qun"]],
+	sb_zhurong: ["female", "shu", 4, ["sblieren", "sbjuxiang"], ["doublegroup:shu:qun", "name:null|null"]],
 	sb_menghuo: ["male", "shu", 4, ["sbhuoshou", "sbzaiqi"], ["doublegroup:shu:qun"]],
 	sb_yl_luzhi: ["male", "qun", 3, ["nzry_mingren", "sbzhenliang"]],
 	sb_xiaoqiao: ["female", "wu", 3, ["sbtianxiang", "xinhongyan"], ["name:桥|null"]],

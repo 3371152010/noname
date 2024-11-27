@@ -1858,7 +1858,7 @@ const skills = {
 			"step 2";
 			var equip = get.cardPile(function (card) {
 				return get.type(card) == "equip" && target.hasUseTarget(card);
-			});
+			}, false, "random");
 			if (target.isMinEquip() && equip) {
 				target.chooseUseTarget(equip, "nothrow", "nopopup", true);
 				event.e = true;
@@ -1876,7 +1876,7 @@ const skills = {
 			if (!event.e && player.isMinEquip()) {
 				var equip = get.cardPile(function (card) {
 					return get.type(card) == "equip" && player.hasUseTarget(card);
-				});
+				}, false, "random");
 				if (equip) player.chooseUseTarget(equip, "nothrow", "nopopup", true);
 			}
 			"step 6";
@@ -1997,6 +1997,17 @@ const skills = {
 				else if (event.respondTo[1].cards) cards.addArray(event.respondTo[1].cards);
 				return cards.filterInD("od").length > 0;
 			} else return event.cards.filterInD("od").length > 0;
+		},
+		check(event, player) {
+			if (player.hasSkill("funan_jiexun") || get.attitude(player, event.player) > 0) return true;
+			let cards = [];
+			if (get.itemtype(event.respondTo[1]) == "card") cards.push(event.respondTo[1]);
+			else if (event.respondTo[1].cards) cards.addArray(event.respondTo[1].cards);
+			return event.cards.filterInD("od").reduce((acc, card) => {
+				return acc + get.value(card);
+			}, 0) - cards.filterInD("od").reduce((acc, card) => {
+				return acc + get.value(card);
+			});
 		},
 		logTarget: "player",
 		content: function () {
@@ -2486,7 +2497,7 @@ const skills = {
 				target.loseHp();
 				event.card = get.cardPile(function (card) {
 					return get.type(card) == "equip" && target.canUse(card, target);
-				});
+				}, false, "random");
 				if (event.card) {
 					target.chooseUseTarget(event.card, "nothrow", "nopopup", true);
 					event.goto(3);
@@ -2568,7 +2579,7 @@ const skills = {
 					trigger.source.loseHp();
 					var card = get.cardPile(function (card) {
 						return get.type(card) == "equip" && trigger.source.canUse(card, trigger.source);
-					});
+					}, false, "random");
 					if (card) {
 						trigger.source.chooseUseTarget(card, "nothrow", "nopopup", true);
 					}
@@ -2620,7 +2631,7 @@ const skills = {
 						target.loseHp();
 						var card = get.cardPile(function (card) {
 							return get.type(card) == "equip" && target.canUse(card, target);
-						});
+						}, false, "random");
 						if (card) {
 							target.chooseUseTarget(card, true, "nothrow", "nopopup", true);
 						}
@@ -3810,21 +3821,17 @@ const skills = {
 		audio: 2,
 		enable: "chooseToUse",
 		filter: function (event, player) {
-			return (
-				player.hasCard(card =>
-					lib.inpile.some(name => {
-						if (player.getStorage("taoluan").includes(name)) return false;
-						if (get.type(name) != "basic" && get.type(name) != "trick") return false;
-						if (event.filterCard({ name: name, isCard: true, cards: [card] }, player, event)) return true;
-						if (name == "sha") {
-							for (var nature of lib.inpile_nature) {
-								if (event.filterCard({ name: name, nature: nature, isCard: true, cards: [card] }, player, event)) return true;
-							}
-						}
-						return false;
-					}, "hes")
-				) > 0
-			);
+			return player.hasCard(card => lib.inpile.some(name => {
+				if (player.getStorage("taoluan").includes(name)) return false;
+				if (get.type(name) != "basic" && get.type(name) != "trick") return false;
+				if (event.filterCard({ name: name, isCard: true, cards: [card] }, player, event)) return true;
+				if (name == "sha") {
+					for (var nature of lib.inpile_nature) {
+						if (event.filterCard({ name: name, nature: nature, isCard: true, cards: [card] }, player, event)) return true;
+					}
+				}
+				return false;
+			}), "hes");
 		},
 		onremove: true,
 		chooseButton: {
@@ -4671,14 +4678,14 @@ const skills = {
 			return player.countCards("h") > player.hp;
 		},
 		filterTarget: function (card, player, target) {
-			return get.distance(target, player, "attack") <= 1 && target.countCards("e") > 0;
+			return player !== target && target.inRange(player) && target.countCards("e") > 0;
 		},
 		content: function () {
 			"step 0";
-			target.chooseToUse({ name: "sha" }, "止戈：使用一张杀，或将其装备区里的一张牌交给" + get.translation(player));
+			target.chooseToUse({ name: "sha" }, "止戈：使用一张杀，或将装备区里的一张牌交给" + get.translation(player));
 			"step 1";
 			if (!result.bool && target.countCards("e")) {
-				target.chooseCard("e", true, "将其装备区里的一张牌交给" + get.translation(player));
+				target.chooseCard("e", true, "将装备区里的一张牌交给" + get.translation(player));
 			} else {
 				event.finish();
 			}
@@ -7166,7 +7173,7 @@ const skills = {
 			},
 			nokeep: true,
 			skillTagFilter: function (player, tag, arg) {
-				if (tag === "nokeep") return (!arg || (arg.card && get.name(arg.card) === "tao")) && player.isPhaseUsing() && player.countSkill("zhanjue_draw") < 2 && player.hasCard(card => get.name(card) != "tao", "h");
+				if (tag === "nokeep") return (!arg || (arg.card && get.name(arg.card) === "tao")) && player.isPhaseUsing() && get.skillCount("zhanjue_draw") < 2 && player.hasCard(card => get.name(card) != "tao", "h");
 			},
 		},
 	},

@@ -22,7 +22,7 @@ export default () => {
 				}
 			}
 			for (var i in lib.character) {
-				if (lib.character[i].group == "shen") {
+				if (lib.character[i].group == "shen" || lib.character[i].group == "western") {
 					lib.character[i].group = lib.character[i].groupInGuozhan || "qun";
 				}
 			}
@@ -40,7 +40,7 @@ export default () => {
 				}
 			}
 			for (var i in lib.character) {
-				if (lib.character[i].group == "shen") {
+				if (lib.character[i].group == "shen" || lib.character[i].group == "western") {
 					lib.character[i].group = lib.character[i].groupInGuozhan || "qun";
 				}
 			}
@@ -153,7 +153,7 @@ export default () => {
 							}
 						}
 						for (var i in lib.character) {
-							if (lib.character[i][1] == "shen") {
+							if (lib.character[i][1] == "shen" || lib.character[i][1] == "western") {
 								lib.character[i].group = lib.character[i].groupInGuozhan || "qun";
 							}
 						}
@@ -1277,15 +1277,18 @@ export default () => {
 			//徐盛
 			gzyicheng_new: {
 				audio: "yicheng",
-				inherit: "yicheng",
 				trigger: { global: ["useCardToPlayered", "useCardToTargeted"] },
 				filter(event, player, name) {
-					const bool = name === "seCardToPlayered";
+					const bool = name === "useCardToPlayered";
 					if (bool && !event.isFirstTarget) return false;
 					return event.card.name == "sha" && event[bool ? "player" : "target"].isFriendOf(player);
 				},
 				logTarget(event, player, name) {
-					return event[name === "seCardToPlayered" ? "player" : "target"];
+					return event[name === "useCardToPlayered" ? "player" : "target"];
+				},
+				async content(event, trigger, player) {
+					await event.targets[0].draw();
+					await event.targets[0].chooseToDiscard("he", true);
 				},
 			},
 			//陆逊
@@ -1296,8 +1299,9 @@ export default () => {
 					return player.hasUseTarget(new lib.element.VCard({ name: "yiyi" }));
 				},
 				direct: true,
+				preHidden: true,
 				content() {
-					player.chooseUseTarget(get.prompt2(event.name), new lib.element.VCard({ name: "yiyi" }), false).logSkill = event.name;
+					player.chooseUseTarget(get.prompt2(event.name), new lib.element.VCard({ name: "yiyi" }), false).set("hiddenSkill", event.name).logSkill = event.name;
 				},
 			},
 			//臧霸
@@ -1384,7 +1388,7 @@ export default () => {
 						.forResult();
 				},
 				async content(event, trigger, player) {
-					const result = await target
+					const result = await event.targets[0]
 						.chooseToGive(player, "he", true, "give")
 						.set("ai", card => {
 							const player = get.player(),
@@ -7005,17 +7009,16 @@ export default () => {
 				},
 				usable: 1,
 				preHidden: true,
-				content: function () {
-					var cards = get.cards(4);
-					game.cardsGotoOrdering(cards);
-					player.showCards(cards, get.translation(player) + "发动了【诱言】");
+				async content(event, trigger, player) {
+					let cards = get.cards(4, true);
+					await player.showCards(cards, get.translation(player) + "发动了【诱言】");
 					var evt = trigger.getl(player);
 					var list = [];
 					for (var i of evt.cards2) {
 						list.add(get.suit(i, player));
 					}
 					cards = cards.filter(card => !list.includes(get.suit(card, false)));
-					if (cards.length) player.gain(cards, "gain2");
+					if (cards.length) await player.gain(cards, "gain2");
 				},
 				ai: {
 					effect: {
@@ -8349,72 +8352,30 @@ export default () => {
 				},
 				subSkill: { blocker: { charlotte: true } },
 			},
-			gzxiongzhi: {
-				audio: "xiongzhi",
-				enable: "phaseUse",
-				limited: true,
-				skillAnimation: true,
-				animationColor: "thunder",
-				content: function () {
-					"step 0";
-					player.awakenSkill("gzxiongzhi");
-					event.cards = game.cardsGotoOrdering(get.cards(player.maxHp)).cards.slice(0);
-					"step 1";
-					var card = cards.shift();
-					event.card = card;
-					player.showCards(card);
-					if (!player.hasUseTarget(card)) {
-						if (cards.length > 0) event.redo();
-						else event.finish();
-					}
-					"step 2";
-					var next = player.chooseUseTarget(card, true);
-					if (get.info(card).updateUsable == "phaseUse") next.addCount = false;
-					"step 3";
-					if (result.bool && cards.length > 0) event.goto(1);
-				},
-				ai: {
-					order: 1,
-					result: {
-						player: function (player) {
-							if (!player.hasSkill("smyyingshi")) return 1;
-							var cards = [];
-							for (var i = 0; i < player.maxHp; i++) {
-								var card = ui.cardPile.childNodes[i];
-								if (card) {
-									if (!player.hasValueTarget(card)) return 0;
-								} else break;
-							}
-							return 1;
-						},
-					},
-				},
-			},
 			//十周年羊祜
 			gzdeshao: {
 				audio: "dcdeshao",
 				trigger: { target: "useCardToTargeted" },
+				usable(skill, player) {
+					return player.hp;
+				},
 				preHidden: true,
-				countUnseen: function (player) {
-					var num = 0;
+				countUnseen(player) {
+					let num = 0;
 					if (player.isUnseen(0)) num++;
 					if (player.isUnseen(1)) num++;
 					return num;
 				},
-				filter: function (event, player) {
+				filter(event, player) {
 					if (player == event.player || event.targets.length != 1 || get.color(event.card) != "black") return false;
-					if (lib.skill.gzdeshao.countUnseen(event.player) < lib.skill.gzdeshao.countUnseen(player) || !event.player.countCards("he")) return false;
-					return (
-						player.getHistory("useSkill", function (evt) {
-							return evt.skill == "gzdeshao";
-						}).length < player.hp
-					);
+					if (lib.skill.gzdeshao.countUnseen(event.player) < lib.skill.gzdeshao.countUnseen(player)) return false;
+					return event.player.countDiscardableCards(player, "he");
 				},
-				check: function (event, player) {
+				check(event, player) {
 					return get.effect(event.player, { name: "guohe_copy2" }, player, player) > 0;
 				},
 				logTarget: "player",
-				content: function () {
+				content() {
 					player.discardPlayerCard(trigger.player, true, "he");
 				},
 			},
@@ -9024,8 +8985,8 @@ export default () => {
 			gzshensu: {
 				audio: "shensu1",
 				audioname: ["xiahouba", "re_xiahouyuan", "ol_xiahouyuan"],
-				group: ["shensu1", "shensu2"],
-				preHidden: ["shensu1", "shensu2", "gzshensu"],
+				group: ["gzshensu_1", "gzshensu_2"],
+				preHidden: ["gzshensu_1", "gzshensu_2", "gzshensu"],
 				trigger: { player: "phaseDiscardBegin" },
 				direct: true,
 				filter: function (event, player) {
@@ -9052,6 +9013,17 @@ export default () => {
 						trigger.cancel();
 						player.useCard({ name: "sha", isCard: true }, target, false);
 					}
+				},
+				subSkill: {
+					1: {
+						audio: "shensu1",
+						inherit: "shensu1",
+						sourceSkill: "gzshensu",
+					},
+					2: {
+						inherit: "shensu2",
+						sourceSkill: "gzshensu",
+					},
 				},
 			},
 			//吕玲绮
@@ -11244,12 +11216,24 @@ export default () => {
 							return evt.card == trigger.card;
 						}) &&
 						game.hasPlayer(function (current) {
-							return current.isFriendOf(player) && !current.hasMark("yexinjia_mark") && !current.hasMark("xianqu_mark") && !current.hasMark("yinyang_mark") && !current.hasMark("zhulianbihe_mark");
+							if (current.hasMark("yinyang_mark") || !current.isFriendOf(player)) return false;
+							let names = get.nameList(current).filter(i => i.indexOf("gz_shibing") !== 0);
+							game.getAllGlobalHistory("everything", evt => {
+								if (evt.name !== "showCharacter" || evt.player !== current) return false;
+								names.removeArray(evt.toShow);
+							});
+							return names.length === 0;
 						})
 					) {
 						player
-							.chooseTarget("是否令一名己方角色获得“阴阳鱼”标记？", function (card, player, current) {
-								return current.isFriendOf(player) && !current.hasMark("yexinjia_mark") && !current.hasMark("xianqu_mark") && !current.hasMark("yinyang_mark") && !current.hasMark("zhulianbihe_mark");
+							.chooseTarget("是否令一名武将牌均明置过的己方角色获得“阴阳鱼”标记？", function (card, player, current) {
+								if (current.hasMark("yinyang_mark") || !current.isFriendOf(player)) return false;
+								let names = get.nameList(current).filter(i => i.indexOf("gz_shibing") !== 0);
+								game.getAllGlobalHistory("everything", evt => {
+									if (evt.name !== "showCharacter" || evt.player !== current) return false;
+									names.removeArray(evt.toShow);
+								});
+								return names.length === 0;
 							})
 							.set("ai", function (target) {
 								return get.attitude(_status.event.player, target) * Math.sqrt(1 + target.needsToDiscard());
@@ -12003,19 +11987,10 @@ export default () => {
 				trigger: { target: "useCardToTargeted" },
 				filter: function (event, player) {
 					if (player == event.player || event.targets.length != 1 || !event.player.isIn()) return false;
-					if (
-						!target.hasCard(function (card) {
-							return lib.filter.canBeDiscarded(card, player, target);
-						}, "he") &&
-						_status.event.dying
-					)
-						return false;
+					if (!event.player.countCards("he") && _status.event.dying) return false;
 					var hs = player.getCards("h");
 					if (hs.length == 0) return false;
-					for (var i of hs) {
-						if (!lib.filter.cardDiscardable(i, player, "gzshejian")) return false;
-					}
-					return true;
+					return hs.every(i => lib.filter.cardDiscardable(i, player, "gzshejian"));
 				},
 				check: function (event, player) {
 					var target = event.player;
@@ -12065,12 +12040,7 @@ export default () => {
 					event.target = target;
 					if (!target.isIn()) event.finish();
 					else if (_status.event.dying) event._result = { index: 0 };
-					else if (
-						!target.hasCard(function (card) {
-							return lib.filter.canBeDiscarded(card, player, target);
-						}, "he")
-					)
-						event._result = { index: 1 };
+					else if (target.countCards("he")) event._result = { index: 1 };
 					else
 						player
 							.chooseControl()
@@ -12337,79 +12307,6 @@ export default () => {
 					skillTagFilter: function () {
 						return lib.skill.gzxingzhao.getNum() > 3;
 					},
-				},
-			},
-			qiuan: {
-				audio: 2,
-				trigger: { player: "damageBegin2" },
-				filter: function (event, player) {
-					return event.cards && event.cards.filterInD().length > 0 && !player.getExpansions("qiuan").length;
-				},
-				check: function (event, player) {
-					if (get.damageEffect(player, event.source || player, player, event.nature) >= 0) return false;
-					return true;
-				},
-				preHidden: true,
-				content: function () {
-					var cards = trigger.cards.filterInD();
-					player.addToExpansion("gain2", cards).gaintag.add("qiuan");
-					trigger.cancel();
-				},
-				intro: {
-					content: "expansion",
-					markcount: "expansion",
-				},
-				marktext: "函",
-			},
-			liangfan: {
-				audio: 2,
-				trigger: { player: "phaseZhunbeiBegin" },
-				forced: true,
-				filter: function (event, player) {
-					return player.getExpansions("qiuan").length > 0;
-				},
-				content: function () {
-					"step 0";
-					var cards = player.getExpansions("qiuan");
-					player.gain(cards, "gain2").gaintag.add("liangfan");
-					player.addTempSkill("liangfan2");
-					"step 1";
-					player.loseHp();
-				},
-			},
-			liangfan2: {
-				audio: "liangfan",
-				mark: true,
-				mod: {
-					aiOrder: function (player, card, num) {
-						if (get.itemtype(card) == "card" && card.hasGaintag("liangfan")) return num + 0.1;
-					},
-				},
-				intro: { content: "使用“量反”牌造成伤害后，可获得目标角色的一张牌" },
-				trigger: { source: "damageEnd" },
-				logTarget: "player",
-				charlotte: true,
-				onremove: function (player) {
-					player.removeGaintag("liangfan");
-				},
-				prompt: event => "量反：是否获得" + get.translation(event.player) + "的一张牌？",
-				filter: function (event, player) {
-					var evt = event.getParent(2);
-					if (evt.name != "useCard" || evt.card != event.card) return false;
-					if (!event.player.countGainableCards(player, "he")) return false;
-					return (
-						player.getHistory("lose", function (evt2) {
-							if (evt2.getParent() != evt) return false;
-							for (var i in evt2.gaintag_map) {
-								if (evt2.gaintag_map[i].includes("liangfan")) return true;
-							}
-							return false;
-						}).length > 0
-					);
-				},
-				marktext: "反",
-				content: function () {
-					player.gainPlayerCard(trigger.player, true, "he");
 				},
 			},
 			gzwenji: {
@@ -19769,7 +19666,7 @@ export default () => {
 					list.add("ye");
 					var str = "";
 					for (var i = 0; i < list.length; i++) {
-						if (list[i] != "shen" && data[list[i]]) {
+						if (list[i] != "shen" && list[i] != "western" && data[list[i]]) {
 							str += lib.translate[list[i] + "2"] + "：" + data[list[i]][0] + "胜" + " " + data[list[i]][1] + "负<br>";
 						}
 					}
@@ -20675,7 +20572,7 @@ export default () => {
 			gzshensu: "神速",
 			gzshensu_info: "①判定阶段开始时，你可跳过此阶段和摸牌阶段，视为使用一张【杀】（无距离限制）。②出牌阶段开始时，你可跳过此阶段并弃置一张装备牌，视为使用一张【杀】（无距离限制）。③弃牌开始时，你可跳过此阶段并失去1点体力，视为使用一张【杀】（无距离限制）。",
 			gzwushuang: "无双",
-			gzwushuang_info: "锁定技。①当你使用【杀】或【决斗】指定目标后/成为【决斗】的目标后，你令此牌需要依次使用或打出两张【闪】或【杀】响应。②当你使用非转化的【决斗】选择目标后，你可为此【决斗】增加两个目标。",
+			gzwushuang_info: "锁定技。①当你使用【杀】指定一名角色为目标后，其需使用两张【闪】才能抵消；②当你使用【决斗】指定其他角色为目标后，或成为其他角色使用【决斗】的目标后，其每次响应需打出两张【杀】。③当你使用非转化的【决斗】选择目标后，你可为此【决斗】增加两个目标。",
 			gzkuangfu: "狂斧",
 			gzkuangfu_info: "出牌阶段限一次。当你使用【杀】指定目标后，你可获得目标角色装备区内的一张牌。然后若此【杀】未造成伤害，则你弃置两张手牌。",
 			gzliegong: "烈弓",
@@ -20783,7 +20680,7 @@ export default () => {
 			gzcongcha2: "聪察",
 			gzcongcha_info: "①准备阶段，你可以选择一名未确定势力的其他角色。当其于你的下回合开始前首次明置武将牌后，若其：与你势力相同，则你与其各摸两张牌；与你势力不同，则其失去1点体力。②摸牌阶段开始时，若场上所有角色均有明置的武将牌，则你可以令额定摸牌数+2。",
 			gzchenglve: "成略",
-			gzchenglve_info: "己方角色使用牌结算结束后，若此牌的目标数大于1，则你可以令其摸一张牌。若你受到过渠道为此牌的伤害，则你可以令一名没有国战标记的己方角色获得一枚“阴阳鱼”。",
+			gzchenglve_info: "己方角色使用牌结算结束后，若此牌的目标数大于1，则你可以令其摸一张牌。若你受到过渠道为此牌的伤害，则你可以令一名武将牌均明置过且没有“阴阳鱼”标记的己方角色获得一枚“阴阳鱼”。",
 			gzbaolie: "豹烈",
 			gzbaolie_info: "锁定技，出牌阶段开始时，你令所有攻击范围内包含你的非己方角色依次选择：①对你使用一张【杀】；②令你弃置其一张牌。锁定技，你对体力值不小于你的角色使用【杀】没有距离和次数限制。",
 			gzshicai: "恃才",
@@ -20791,11 +20688,6 @@ export default () => {
 			gzxingzhao: "兴棹",
 			gzxingzhao_info: "锁定技：①摸牌阶段开始时，若X不小于1，则你可以发动〖恂恂〗的效果。②当你受到伤害后或使用装备牌时，若X不小于2且你的手牌数不为全场最多，则你摸一张牌。③若X不小于3，则你的手牌上限+4。④当你失去装备区的牌后，若X不小于4，则你摸一张牌。（X为场上有受伤角色的势力数）",
 			gzxingzhao_old_info: "锁定技：①摸牌阶段开始时，若X不小于1，则你可以发动〖恂恂〗的效果。②当你受到伤害后，若X不小于2且你和伤害来源的手牌数不相等，则你于伤害来源中手牌数较少的角色摸一张牌。③若X不小于3，则你的手牌上限+4。④当你失去装备区的牌后，若X不小于4，则你摸一张牌。（X为场上有受伤角色的势力数）",
-			qiuan: "求安",
-			qiuan_info: "当你受到伤害后，若此伤害的渠道有对应的实体牌且你的武将牌上没有“函”，则你可以防止此伤害并将这些牌置于你的武将牌上，称为“函”。",
-			liangfan: "量反",
-			liangfan2: "量反",
-			liangfan_info: "锁定技，准备阶段，若你的武将牌上有“函”，则你获得这些牌，然后失去1点体力。当你于此回合内因使用实体牌中包含“函”的牌且执行这些牌的效果而对目标角色造成伤害时，你可以获得目标角色的一张牌。",
 			gzwenji: "问计",
 			gzwenji_info: "出牌阶段开始时，你可令一名其他角色交给你一张牌。然后若该角色：未确定势力或势力与你相同，则你于本回合内使用实体牌包含“问计”牌的牌无距离和次数限制，且不可被其他角色响应。与你势力不同，则你交给其一张不为“问计”牌的牌或令其摸一张牌。",
 			gztunjiang: "屯江",
@@ -21138,8 +21030,6 @@ export default () => {
 			gzhongyuan_info: "①出牌阶段限一次。你可以令一张没有「合纵」标签的卡牌视为拥有「合纵」标签直到本回合结束。②当你即将因合纵效果摸牌时，你可放弃摸牌，并令一名己方角色摸等量的牌。",
 			gzmingzhe: "明哲",
 			gzmingzhe_info: "你的回合外，当你使用或打出红色手牌，或失去装备区内的红色装备牌时，你可摸一张牌。",
-			gzxiongzhi: "雄志",
-			gzxiongzhi_info: "限定技。出牌阶段，你可依次展示牌堆顶的X张牌并使用之（X为你的体力上限）。",
 			gzquanbian: "权变",
 			gzquanbian_info: "当你于出牌阶段内使用/打出手牌时，若此牌有花色且你本回合内未使用/打出过该花色的其他手牌，则你可以观看牌堆顶X张牌，选择获得其中的一张并展示之。若你本回合使用过与得到的牌花色相同的牌，则你本回合内不能再发动〖权变〗。",
 			gzhuishi: "慧识",

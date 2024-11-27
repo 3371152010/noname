@@ -264,7 +264,7 @@ export async function boot() {
 	config.get("all").plays = [];
 	config.get("all").mode = [];
 
-	if (!config.get("errstop") || config.get("compatiblemode")) _status.withError = true;
+	if (config.get("compatiblemode")) _status.withError = true;
 	if (config.get("debug")) {
 		await lib.init.promises.js(`${lib.assetURL}game`, "asset");
 		if (window.noname_skin_list) {
@@ -738,6 +738,22 @@ function initSheet(libConfig) {
 		Reflect.get(ui, "css").border_stylesheet.sheet.insertRule('#window #arena.long:not(.fewplayer) .player>.framebg, #arena.oldlayout .player>.framebg{background-image:url("' + lib.assetURL + "theme/style/player/" + bstyle + '3.png")}', 0);
 		Reflect.get(ui, "css").border_stylesheet.sheet.insertRule(".player>.count{z-index: 3 !important;border-radius: 2px !important;text-align: center !important;}", 0);
 	}
+	game.zsOriginLineXy = game.linexy;
+	if (libConfig.zhishixian && libConfig.zhishixian != "default") {
+		var layout = libConfig.zhishixian;
+		if (layout == "next_moren") { var items = 'default'; }
+		else if (layout == "next_Shuimo") { var items = 'Shuimo'; }
+		else if (layout == "next_Jianfeng") { var items = 'Jianfeng'; }
+		else {
+			var items = layout;
+		}
+		game.saveConfig('zhishixian', layout);
+		if (items == 'default') {
+			game.linexy = game.zsOriginLineXy;
+		} else {
+			game.linexy = game['zs' + items + 'LineXy'];
+		}
+	}
 	if (libConfig.control_style && libConfig.control_style != "default" && libConfig.control_style != "custom") {
 		var str = "";
 		switch (libConfig.control_style) {
@@ -847,6 +863,7 @@ async function loadConfig() {
 async function loadCss() {
 	Reflect.set(ui, "css", {
 		menu: await lib.init.promises.css(lib.assetURL + "layout/default", "menu"),
+		newmenu: await lib.init.promises.css(lib.assetURL + "layout/default", "newmenu"),
 		default: await lib.init.promises.css(lib.assetURL + "layout/default", "layout"),
 	});
 }
@@ -964,7 +981,11 @@ async function setOnError() {
 		if (errorReporter) game.print(errorReporter.report(str + "\n代码出现错误"));
 		else {
 			if (typeof line == "number" && (typeof Reflect.get(game, "readFile") == "function" || location.origin != "file://")) {
-				const createShowCode = function (lines) {
+				/**
+				 * @param { string[] } lines 代码分割行数
+				 * @param { number } lines 代码报错行数
+				 */
+				const createShowCode = function (lines, line) {
 					let showCode = "";
 					if (lines.length >= 10) {
 						if (line > 4) {
@@ -981,22 +1002,11 @@ async function setOnError() {
 					}
 					return showCode;
 				};
-				//协议名须和html一致(网页端防跨域)，且文件是js
-				if (typeof src == "string" && src.startsWith(location.protocol) && src.endsWith(".js")) {
-					//获取代码
-					const codes = lib.init.reqSync("local:" + decodeURI(src).replace(lib.assetURL, "").replace(winPath, ""));
-					if (codes) {
-						const lines = codes.split("\n");
-						str += "\n" + createShowCode(lines);
-						str += "\n-------------";
-					}
-				}
-				//解析parsex里的content fun内容(通常是技能content)
-				// @ts-ignore
-				else if (
+				// 解析step content的错误
+				if (
 					err &&
 					err.stack &&
-					["at Object.eval [as content]", "at Proxy.content"].some(str => {
+					["at GameEvent.eval (eval at packStep", "at StepParser.eval (eval at packStep"].some(str => {
 						let stackSplit1 = err.stack.split("\n")[1];
 						if (stackSplit1) {
 							return stackSplit1.trim().startsWith(str);
@@ -1004,10 +1014,25 @@ async function setOnError() {
 						return false;
 					})
 				) {
-					const codes = _status.event.content;
+					// @ts-ignore
+					const codes = _status.event.content.originals[_status.event.step];
 					if (typeof codes == "function") {
-						const lines = codes.toString().split("\n");
-						str += "\n" + createShowCode(lines);
+						const regex = /<anonymous>:(\d+):\d+/;
+						const match = err.stack.split("\n")[1].match(regex);
+						if (match) {
+							const lines = codes.toString().split("\n");
+							str += "\n" + createShowCode(lines, Number(match[1]));
+							str += "\n-------------";
+						}
+					}
+				}
+				// 协议名须和html一致(网页端防跨域)，且文件是js
+				else if (typeof src == "string" && src.startsWith(location.protocol) && src.endsWith(".js")) {
+					//获取代码
+					const codes = lib.init.reqSync("local:" + decodeURI(src).replace(lib.assetURL, "").replace(winPath, ""));
+					if (codes) {
+						const lines = codes.split("\n");
+						str += "\n" + createShowCode(lines, line);
 						str += "\n-------------";
 					}
 				}

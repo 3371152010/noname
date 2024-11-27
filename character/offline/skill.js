@@ -740,7 +740,9 @@ const skills = {
 		},
 		logTarget: "target",
 		async content(event, trigger, player) {
-			const num = player.getHistory("useSkill", evt => evt.skill == "xkxianxing").length;
+			player.addTempSkill(event.name + "_used");
+			player.addMark(event.name + "_used", 1, false);
+			const num = player.countMark(event.name + "_used");
 			await player.draw(num);
 			if (num > 1) {
 				player
@@ -755,9 +757,8 @@ const skills = {
 									if (get.event("num") > 1) return 1;
 									return [0, 1].randomGet();
 								})
-								.set("num", num)
-						}
-						else event.finish();
+								.set("num", num);
+						} else event.finish();
 					})
 					.then(() => {
 						if (result.index == 0) player.loseHp(num - 1);
@@ -768,6 +769,15 @@ const skills = {
 						num: num,
 					});
 			}
+		},
+		subSkill: {
+			used: {
+				charlotte: true,
+				onremove: true,
+				intro: {
+					content: "已发动过#次",
+				},
+			},
 		},
 	},
 	xk_qiyijun: {
@@ -1822,8 +1832,7 @@ const skills = {
 		enable: "phaseUse",
 		usable: 1,
 		async content(event, trigger, player) {
-			let cards = get.cards(3);
-			await game.cardsGotoOrdering(cards);
+			let cards = get.cards(3, true);
 			await player.showCards(cards, get.translation(player) + "发动了【冲虚】");
 			const {
 				result: {
@@ -2177,8 +2186,7 @@ const skills = {
 			return 5 - get.value(card);
 		},
 		async content(event, trigger, player) {
-			let cards = get.cards(event.cards.length);
-			await game.cardsGotoOrdering(cards);
+			let cards = get.cards(event.cards.length, true);
 			await player.showCards(cards, get.translation(player) + "发动了【爵制】");
 			const {
 				result: {
@@ -3522,15 +3530,16 @@ const skills = {
 	tydingpan: {
 		audio: "dingpan",
 		enable: "phaseUse",
-		usable: 3,
+		usable(skill, player) {
+			return get.event().tydingpan?.length;
+		},
 		filter(event, player) {
-			if (event.tydingpan && player.countMark("tydingpan") >= event.tydingpan.length) return false;
 			return game.hasPlayer(current => current.countCards("e"));
 		},
 		filterTarget(event, player, target) {
 			return target.countCards("e");
 		},
-		onChooseToUse: function (event) {
+		onChooseToUse(event) {
 			if (event.type != "phase" || game.online) return;
 			var list = [],
 				player = event.player;
@@ -3540,13 +3549,7 @@ const skills = {
 			event.set("tydingpan", list);
 		},
 		async content(event, trigger, player) {
-			if (!player.countMark("tydingpan")) {
-				player.when({ global: ["phaseUseBegin", "phaseUseAfter"] }).then(() => {
-					player.removeMark("tydingpan", player.countMark("tydingpan"), false);
-				});
-			}
-			player.addMark("tydingpan", 1, false);
-			const target = event.target;
+			const { target } = event;
 			await target.draw();
 			let goon = get.damageEffect(target, player, target) >= 0;
 			if (!goon && target.hp >= 4 && get.attitude(player, target) < 0) {
@@ -3766,22 +3769,17 @@ const skills = {
 	},
 	tytanlong: {
 		enable: "phaseUse",
-		usable: 221,
+		usable(skill, player) {
+			return 1 + game.countPlayer(current => current.isLinked());
+		},
 		filter(event, player) {
-			if (player.countMark("tytanlong") > game.countPlayer(current => current.isLinked())) return false;
-			return game.hasPlayer(current => player.canCompare(current)) && player.countCards("h");
+			return game.hasPlayer(current => player.canCompare(current));
 		},
 		filterTarget(event, player, target) {
 			return player.canCompare(target);
 		},
 		async content(event, trigger, player) {
-			if (!player.countMark("tytanlong")) {
-				player.when({ global: ["phaseUseBegin", "phaseUseAfter"] }).then(() => {
-					player.removeMark("tytanlong", player.countMark("tytanlong"), false);
-				});
-			}
-			player.addMark("tytanlong", 1, false);
-			const target = event.target;
+			const { target } = event;
 			const next = player.chooseToCompare(target);
 			if (get.attitude(player, target) > 0) next.set("small", true);
 			const result = await next.forResult();
@@ -4964,7 +4962,7 @@ const skills = {
 				event.result = {
 					bool: result.bool,
 					targets: [target],
-					cost_data: result.links[0],
+					cost_data: result.links?.[0],
 				};
 			} else event.result = { bool: false };
 		},
@@ -5680,7 +5678,7 @@ const skills = {
 			if (!result.bool) {
 				let gains = [];
 				while (gains.length < 2) {
-					const card = get.cardPile(i => get.type(i) == "trick" && !gains.includes(i));
+					const card = get.cardPile(i => get.type(i) == "trick" && !gains.includes(i), false, "random");
 					if (card) gains.push(card);
 					else break;
 				}
@@ -11365,7 +11363,7 @@ const skills = {
 			var ai1 = function (card) {
 				var player = _status.event.player,
 					current = _status.event.current;
-				var card = get.color(card);
+				var color = get.color(card);
 				if (color == "black") {
 					if (!current.hasSha() || !current.hasUseTarget({ name: "sha" })) return 0;
 					if (targets.length) return 5.5 - get.value(card);

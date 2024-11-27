@@ -1,4 +1,5 @@
 const characters = {
+	mb_ganfuren: ["female", "shu", 3, ["mbzhijie", "mbshushen"]],
 	mb_sp_zhenji: ["female", "qun", 3, ["mbbojian", "mbjiwei"]],
 	mb_zhangfen: ["male", "wu", 4, ["mbquchong", "mbxunjie"]],
 	mb_jiachong: ["male", "qun", 3, ["mbbeini", "mbdingfa"], ["border:jin", "die:jiachong"]],
@@ -70,7 +71,7 @@ const characters = {
 	xin_zhoucang: ["male", "shu", 4, ["mobilezhongyong"]],
 	ol_yujin: ["male", "wei", 4, ["rejieyue"], ["die:yujin_yujin.mp3"]],
 	zhouqun: ["male", "shu", 3, ["tiansuan"]],
-	re_zhurong: ["female", "shu", 4, ["juxiang", "relieren"], ["doublegroup:shu:qun"]],
+	re_zhurong: ["female", "shu", 4, ["juxiang", "relieren"], ["doublegroup:shu:qun", "name:null|null"]],
 	re_jiangwei: ["male", "shu", 4, ["retiaoxin", "zhiji"]],
 	nanhualaoxian: ["male", "qun", 3, ["yufeng", "tianshu"], ["name:庄|周"]],
 	re_handang: ["male", "wu", 4, ["regongji", "jiefan"]],

@@ -1,4 +1,5 @@
 const characters = {
+	ol_sb_dongzhuo: ["male", "qun", 5, ["olguanbian", "olxiongni", "olfengshang", "olzhibin"], ["zhu"]],
 	ol_sb_huaxiong: ["male", "qun", 6, ["olsbbojue", "olsbyangwei"]],
 	ol_sb_yuanshu: ["male", "qun", 4, ["olsbjinming", "olsbxiaoshi", "olsbyanliang"], ["zhu"]],
 	ol_sb_sunjian: ["male", "wu", "4/5", ["olsbhulie", "olsbyipo"]],
@@ -16,7 +17,7 @@ const characters = {
 	ol_sb_pangtong: ["male", "shu", 3, ["olsbhongtu", "olsbqiwu"], ["die:true", "die:3"]],
 	ol_fazheng: ["male", "shu", 3, ["olxuanhuo", "olenyuan"]],
 	ol_caifuren: ["female", "qun", 3, ["olqieting", "xianzhou"], ["name:蔡|null"]],
-	ol_liru: ["male", "qun", 3, ["xinjuece", "olmieji", "dcfencheng"]],
+	ol_liru: ["male", "qun", 3, ["oljuece", "olmieji", "dcfencheng"]],
 	ol_liubiao: ["male", "qun", 3, ["olzishou", "olzongshi"]],
 	ol_wuguotai: ["female", "wu", 3, ["olganlu", "olbuyi"], ["name:丁|null"]],
 	ol_sb_kongrong: ["male", "qun", 4, ["olsbliwen", "olsbzhengyi"]],
